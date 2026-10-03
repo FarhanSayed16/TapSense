@@ -1,0 +1,2 @@
+# Generated baseline reports (JSON + MD) land here.
+# Run: python -m scripts.baseline_report --start YYYY-MM-DD --end YYYY-MM-DD

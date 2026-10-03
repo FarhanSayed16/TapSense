@@ -1,0 +1,78 @@
+{
+  "phase": "phase_0_baseline",
+  "start": "2026-10-01",
+  "end": "2026-10-03",
+  "days": 3,
+  "timezone": "Asia/Kolkata",
+  "generated_at": "2026-10-02T19:33:07.107069+00:00",
+  "per_tap": {
+    "tap_a": {
+      "name": "Tap A (Control)",
+      "is_control": true,
+      "days": 3,
+      "liters_per_day": [
+        0.0,
+        0.0,
+        1.25
+      ],
+      "mean_liters_per_day": 0.417,
+      "session_count": 1,
+      "mean_session_liters": 1.25,
+      "long_tail_session_pct": 0.0,
+      "long_tail_volume_pct": 0.0,
+      "total_session_liters": 1.25
+    },
+    "tap_b": {
+      "name": "Tap B",
+      "is_control": false,
+      "days": 3,
+      "liters_per_day": [
+        0.0,
+        0.0,
+        1.25
+      ],
+      "mean_liters_per_day": 0.417,
+      "session_count": 1,
+      "mean_session_liters": 1.25,
+      "long_tail_session_pct": 0.0,
+      "long_tail_volume_pct": 0.0,
+      "total_session_liters": 1.25
+    },
+    "tap_c": {
+      "name": "Tap C",
+      "is_control": false,
+      "days": 3,
+      "liters_per_day": [
+        0.0,
+        0.0,
+        1.25
+      ],
+      "mean_liters_per_day": 0.417,
+      "session_count": 1,
+      "mean_session_liters": 1.25,
+      "long_tail_session_pct": 0.0,
+      "long_tail_volume_pct": 0.0,
+      "total_session_liters": 1.25
+    }
+  },
+  "peak_hours_local": [
+    0
+  ],
+  "hour_histogram": {
+    "0": 3
+  },
+  "control_vs_intervention": {
+    "control_mean_l_day": 0.417,
+    "intervention_mean_l_day": 0.417,
+    "control_mean_session_l": 1.25,
+    "intervention_mean_session_l": 1.25,
+    "note": "Descriptive only \u2014 N is a pilot, not a powered study."
+  },
+  "overall": {
+    "closed_sessions": 3,
+    "long_tail_session_pct": 0.0,
+    "long_tail_volume_pct": 0.0
+  },
+  "suggested_go_for_phase1": false,
+  "suggested_rule": "GO suggested if long-tail volume share or session share >= 15% (override with judgment)."
+}
