@@ -1,0 +1,50 @@
+@import url("https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Outfit:wght@500;600;700&family=Sora:wght@400;500;600&display=swap");
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --bg: #eef3f6;
+  --surface: #ffffff;
+  --ink: #12263a;
+  --muted: #5b6b7c;
+  --brand: #0e7490;
+  --brand-strong: #155e75;
+  --accent: #2dd4bf;
+  --line: #d5dee7;
+  --ok: #059669;
+  --warn: #d97706;
+  --danger: #dc2626;
+  --control: #64748b;
+}
+
+body {
+  color: var(--ink);
+  background:
+    radial-gradient(1100px 520px at -5% -8%, rgba(45, 212, 191, 0.2), transparent 55%),
+    linear-gradient(155deg, #eef3f6 0%, #e2eef4 42%, #eef3f6 100%);
+  font-family: "Sora", system-ui, sans-serif;
+  min-height: 100vh;
+}
+
+h1,
+h2,
+h3,
+.brand {
+  font-family: "Outfit", system-ui, sans-serif;
+}
+
+.mono {
+  font-family: "IBM Plex Mono", ui-monospace, monospace;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
