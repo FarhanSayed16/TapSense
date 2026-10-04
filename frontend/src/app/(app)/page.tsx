@@ -1,59 +1,42 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { Droplets, Shield } from "lucide-react";
 import { Badge, StatusDot } from "@/components/ui/Badge";
-import { Button } from "@/components/ui/Button";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { KpiStat } from "@/components/ui/KpiStat";
 import { MiniBars } from "@/components/ui/MiniBars";
 import { ErrorRetry, LoadingBlock } from "@/components/ui/QueryState";
-import { ApiError, apiFetch } from "@/lib/api";
+import { useScale } from "@/lib/scale-context";
 import { useApiData } from "@/lib/useApiData";
 import {
+  campusDateKey,
   DailyAggregate,
   Device,
   formatLiters,
+  formatRelative,
+  formatWhen,
+  litersOnDate,
+  literTrend,
   Overview,
-  sumByDate,
+  sumWindow,
+  tapLabel,
+  tapWeekTrend,
+  weekTrend,
 } from "@/lib/types";
 
 export default function OverviewPage() {
-  const overview = useApiData<Overview>("/api/v1/overview", { refreshMs: 3000 });
-  const daily = useApiData<DailyAggregate[]>("/api/v1/aggregates/daily?days=7", { refreshMs: 5000 });
-  const device = useApiData<Device>("/api/v1/devices/device_01", { refreshMs: 3000 });
-  const [resetting, setResetting] = useState(false);
-  const [resetMsg, setResetMsg] = useState<string | null>(null);
+  const { overviewPath } = useScale();
+  const overview = useApiData<Overview>(overviewPath, { refreshMs: 3000 });
+  const daily = useApiData<DailyAggregate[]>("/api/v1/aggregates/daily?days=14", { refreshMs: 5000 });
+  const devices = useApiData<Device[]>("/api/v1/devices", { refreshMs: 3000 });
 
-  const loading = overview.loading || daily.loading || device.loading;
-  const error = overview.error || daily.error || device.error;
+  const loading = overview.loading || daily.loading || devices.loading;
+  const error = overview.error || daily.error || devices.error;
   const reload = () => {
     void overview.reload();
     void daily.reload();
-    void device.reload();
-  };
-
-  const resetToday = async () => {
-    const ok = window.confirm(
-      "Reset all of today's water data?\n\nThis clears today's sessions, readings, and liter totals so you can start the day clean. This cannot be undone.",
-    );
-    if (!ok) return;
-    setResetting(true);
-    setResetMsg(null);
-    try {
-      const result = await apiFetch<{
-        date: string;
-        deleted: { sessions: number; readings: number; daily_aggregates: number };
-      }>("/api/v1/admin/reset-today", { method: "POST" });
-      setResetMsg(
-        `Reset ${result.date}: removed ${result.deleted.sessions} sessions, ${result.deleted.readings} readings, ${result.deleted.daily_aggregates} daily totals.`,
-      );
-      reload();
-    } catch (err) {
-      setResetMsg(err instanceof ApiError ? err.message : "Reset failed");
-    } finally {
-      setResetting(false);
-    }
+    void devices.reload();
   };
 
   if (loading && !overview.data) return <LoadingBlock rows={4} />;
@@ -61,96 +44,184 @@ export default function OverviewPage() {
   if (!overview.data) {
     return (
       <EmptyState
-        title="Waiting for first pulses from the washroom ESP"
-        description="Seed the backend and run simulate_ingest, or connect device_01."
+        title="Waiting for first flow readings"
+        description="Connect your ESP device and open a tap — data will appear here automatically."
+        icon="water"
       />
     );
   }
 
   const o = overview.data;
+  const rows = daily.data ?? [];
   const byTapToday = new Map<string, number>(Object.entries(o.tap_liters_today ?? {}));
-  if (byTapToday.size === 0) {
-    const today = new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Kolkata" });
-    for (const row of daily.data ?? []) {
-      if (row.date === today) {
-        byTapToday.set(row.tap_id, (byTapToday.get(row.tap_id) ?? 0) + row.liters);
-      }
-    }
-  }
-  const trend = sumByDate(daily.data ?? []);
-  const status = device.data?.status ?? (o.device_online ? "online" : "unknown");
+  const lastAct = o.tap_last_activity ?? {};
+  const open = o.open_sessions ?? [];
+  const trend = weekTrend(rows, 7);
+  const priorWeek = weekTrend(rows, 14).slice(0, 7);
+  const yesterdayKey = campusDateKey(-1);
+  const todayTrend = literTrend(o.liters_today, litersOnDate(rows, yesterdayKey));
+  const weekTrendKpi = literTrend(sumWindow(trend), sumWindow(priorWeek));
+  const onlineCount = (devices.data ?? []).filter((d) => d.status === "online").length;
+  const staleCount = (devices.data ?? []).filter((d) => d.status === "stale").length;
+  const status: "online" | "stale" | "unknown" =
+    onlineCount > 0 ? "online" : staleCount > 0 ? "stale" : o.device_online ? "online" : "unknown";
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-wrap items-start justify-between gap-3">
+    <div className="space-y-8">
+      {/* ── Page Header ── */}
+      <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight text-ink">Overview</h1>
-          <p className="mt-1 text-sm text-muted">
+          <h1 className="text-[28px] font-bold tracking-tight text-ink">Overview</h1>
+          <p className="mt-1 text-sm text-ink-secondary">
             {o.location.building_name} · {o.location.floor_name} · {o.location.zone_name}
           </p>
-          <p className="mt-1 text-xs text-muted">Live refresh every 3s · device {status}</p>
         </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <button
-            type="button"
-            onClick={reload}
-            className="rounded-md border border-line px-3 py-1.5 text-xs font-medium text-ink hover:border-brand/40"
-          >
-            Refresh now
-          </button>
-          <Button variant="danger" className="min-h-9 px-3 text-xs" disabled={resetting} onClick={() => void resetToday()}>
-            {resetting ? "Resetting…" : "Reset today"}
-          </Button>
-          <Badge kind="phase">Phase 0 — Baseline</Badge>
-        </div>
+        <button
+          type="button"
+          onClick={reload}
+          className="rounded-lg border border-line bg-surface px-4 py-2 text-xs font-semibold text-ink-secondary shadow-soft transition-colors hover:bg-bg-subtle hover:text-ink"
+        >
+          Refresh
+        </button>
       </div>
 
-      {resetMsg ? <p className="text-sm text-muted">{resetMsg}</p> : null}
-
-      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        <KpiStat label="Liters today" value={formatLiters(o.liters_today)} hint="All taps" />
-        <KpiStat label="Liters this week" value={formatLiters(o.liters_week)} />
-        <KpiStat label="Active sessions" value={String(o.active_sessions)} />
+      {/* ── KPI Row ── */}
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <KpiStat
-          label="Device"
-          value={status}
-          hint={device.data?.id ?? "device_01"}
+          label="Liters today"
+          value={formatLiters(o.liters_today)}
+          hint="All taps · vs yesterday"
+          trend={todayTrend}
+        />
+        <KpiStat
+          label="Liters this week"
+          value={formatLiters(o.liters_week)}
+          hint="Last 7 days · vs prior week"
+          trend={weekTrendKpi}
+        />
+        <KpiStat
+          label="Active sessions"
+          value={String(o.active_sessions)}
+          hint={open.length > 0 ? "Flowing now" : "No flow"}
+        />
+        <KpiStat
+          label="Device status"
+          value={status === "online" ? "Online" : status === "stale" ? "Stale" : "Unknown"}
+          hint={formatWhen(o.device_last_seen_at)}
+          trend={
+            status === "online"
+              ? { direction: "up" as const, text: "Connected" }
+              : status === "stale"
+                ? { direction: "down" as const, text: "Check device" }
+                : null
+          }
         />
       </div>
 
-      <section className="rounded-xl border border-line bg-surface/90 p-4">
-        <div className="mb-3 flex items-center justify-between gap-2">
-          <h2 className="text-sm font-semibold text-ink">Taps</h2>
+      {/* ── Live Sessions ── */}
+      <section className={`card p-5 ${open.length > 0 ? "border-ok/25 ring-1 ring-ok/10" : ""}`}>
+        <div className="mb-4 flex items-center justify-between gap-2">
+          <h2 className="text-base font-semibold text-ink">Live Flow</h2>
+          <StatusDot status={open.length ? "online" : "unknown"} />
+        </div>
+        {open.length === 0 ? (
+          <p className="text-sm text-ink-secondary">
+            No taps flowing right now — open a faucet to see a live session appear here.
+          </p>
+        ) : (
+          <ul className="space-y-2">
+            {open.map((s) => (
+              <li
+                key={s.id}
+                className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-ok/20 bg-ok-bg/40 px-4 py-3"
+              >
+                <div>
+                  <p className="font-semibold text-ink">{tapLabel(o.taps, s.tap_id)}</p>
+                  <p className="text-xs text-ink-secondary">
+                    Started {formatWhen(s.started_at)} · last pulse {formatRelative(s.last_flow_at)}
+                  </p>
+                </div>
+                <p className="kpi-value text-lg text-ok">{formatLiters(s.liters)}</p>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
+
+      {/* ── Tap Status ── */}
+      <section>
+        <div className="mb-4 flex items-center justify-between gap-2">
+          <h2 className="text-base font-semibold text-ink">Tap Status</h2>
           <StatusDot status={status === "online" ? "online" : status === "stale" ? "stale" : "unknown"} />
         </div>
-        <div className="grid gap-3 md:grid-cols-3">
-          {o.taps.map((tap) => (
-            <Link
-              key={tap.id}
-              href={`/taps/${tap.id}`}
-              className="rounded-lg border border-line bg-white/70 p-3 transition hover:border-brand/40"
-            >
-              <div className="flex items-center justify-between gap-2">
-                <p className="font-medium text-ink">{tap.name}</p>
-                {tap.is_control ? <Badge kind="control">Control</Badge> : null}
-              </div>
-              <div className="mt-2 flex items-center justify-between">
-                <p className="mono text-xs text-muted">{tap.id}</p>
-                <p className="mono text-sm text-ink">
+        <div className="grid gap-4 md:grid-cols-3">
+          {o.taps.map((tap, index) => {
+            const flowing = open.some((s) => s.tap_id === tap.id);
+            const spark = tapWeekTrend(rows, tap.id, 7);
+            const weekL = sumWindow(spark);
+            return (
+              <Link
+                key={tap.id}
+                href={`/taps/${tap.id}`}
+                className={`card card-interactive p-5 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-card-hover animate-card-enter ${
+                  flowing ? "border-ok/30 bg-ok-bg/20" : tap.is_control ? "border-dashed border-control/30" : ""
+                }`}
+                style={{ animationDelay: `${index * 40}ms` }}
+              >
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-2">
+                    {flowing ? (
+                      <span className="h-2.5 w-2.5 rounded-full bg-ok animate-flow-ripple" />
+                    ) : tap.is_control ? (
+                      <Shield className="h-4 w-4 text-control" strokeWidth={1.75} />
+                    ) : (
+                      <Droplets className="h-4 w-4 text-brand" strokeWidth={1.75} />
+                    )}
+                    <p className="font-semibold text-ink">{tap.name}</p>
+                  </div>
+                  {tap.is_control ? <Badge kind="control">Control</Badge> : null}
+                </div>
+                <p className="kpi-value mt-3 text-2xl text-ink">
                   {formatLiters(byTapToday.get(tap.id) ?? 0)}
                 </p>
-              </div>
-            </Link>
-          ))}
+                <p className="mt-1 text-xs text-ink-secondary">
+                  today · {formatLiters(weekL)} this week
+                </p>
+                <div className="mt-4">
+                  <MiniBars points={spark} compact />
+                </div>
+                <p className="mt-3 text-xs text-muted">
+                  {flowing ? (
+                    <span className="font-medium text-ok">Flowing now</span>
+                  ) : (
+                    `Last activity: ${formatRelative(lastAct[tap.id])}`
+                  )}
+                </p>
+              </Link>
+            );
+          })}
         </div>
       </section>
 
-      <section className="rounded-xl border border-line bg-surface/90 p-4">
-        <h2 className="mb-4 text-sm font-semibold text-ink">Last 7 days</h2>
+      {/* ── Weekly Trend ── */}
+      <section className="card p-5">
+        <div className="mb-5 flex flex-wrap items-end justify-between gap-2">
+          <div>
+            <h2 className="text-base font-semibold text-ink">Weekly Trend</h2>
+            <p className="mt-0.5 text-xs text-muted">Campus total liters by day</p>
+          </div>
+          {!trend.every((p) => p.liters === 0) ? (
+            <p className="text-sm font-medium text-ink-secondary">
+              {formatLiters(sumWindow(trend))}
+              <span className="ml-1 text-xs font-normal text-muted">over 7 days</span>
+            </p>
+          ) : null}
+        </div>
         {trend.every((p) => p.liters === 0) ? (
           <EmptyState
-            title="No usage totals yet"
-            description="Run a simulate_ingest or wait for ESP telemetry."
+            title="Collecting trend data"
+            description="Your first daily chart will appear after 24 hours of sensor readings."
+            icon="water"
             className="border-0 bg-transparent py-8"
           />
         ) : (
