@@ -1,12 +1,15 @@
 import { cn } from "@/lib/cn";
 
-type Kind = "control" | "phase" | "status" | "neutral";
+type Kind = "control" | "phase" | "status" | "neutral" | "warn" | "danger" | "info";
 
 const styles: Record<Kind, string> = {
-  control: "bg-slate-100 text-control border-slate-200",
-  phase: "bg-cyan-50 text-brand-strong border-cyan-100",
-  status: "bg-emerald-50 text-ok border-emerald-100",
-  neutral: "bg-white text-muted border-line",
+  control: "badge-control",
+  phase: "badge-phase",
+  status: "badge-online",
+  warn: "badge-warn",
+  danger: "badge-danger",
+  info: "badge-info",
+  neutral: "bg-slate-50 text-ink-secondary border border-slate-200",
 };
 
 export function Badge({
@@ -21,7 +24,7 @@ export function Badge({
   return (
     <span
       className={cn(
-        "inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-medium",
+        "inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold",
         styles[kind],
         className,
       )}
@@ -33,27 +36,43 @@ export function Badge({
 
 export function StatusDot({
   status,
+  showLabel = true,
 }: {
   status: "online" | "stale" | "unknown" | "offline";
+  showLabel?: boolean;
 }) {
-  const color =
+  const dotColor =
     status === "online"
-      ? "bg-accent"
+      ? "bg-ok"
       : status === "stale"
         ? "bg-warn"
         : status === "offline"
           ? "bg-danger"
           : "bg-control";
+
+  const labelColor =
+    status === "online"
+      ? "text-ok"
+      : status === "stale"
+        ? "text-warn"
+        : status === "offline"
+          ? "text-danger"
+          : "text-muted";
+
   return (
-    <span className="inline-flex items-center gap-1.5 text-xs text-muted">
+    <span className="inline-flex items-center gap-1.5">
       <span
         className={cn(
           "h-2 w-2 rounded-full",
-          color,
+          dotColor,
           status === "online" && "animate-status-pulse",
         )}
       />
-      {status}
+      {showLabel && (
+        <span className={cn("text-xs font-medium capitalize", labelColor)}>
+          {status}
+        </span>
+      )}
     </span>
   );
 }
