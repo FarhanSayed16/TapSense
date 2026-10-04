@@ -10,18 +10,21 @@ export function DataTable({
   className?: string;
 }) {
   return (
-    <div className={cn("overflow-x-auto rounded-xl border border-line bg-surface/90", className)}>
-      <table className="min-w-full text-left text-sm">
-        <thead className="border-b border-line bg-white/60 text-xs uppercase tracking-wide text-muted">
+    <div className={cn("card overflow-x-auto", className)}>
+      <table className="data-table min-w-full text-left text-sm">
+        <thead>
           <tr>
             {headers.map((h) => (
-              <th key={h} className="px-4 py-3 font-medium">
+              <th
+                key={h}
+                className="px-5 py-3.5 text-[11px] font-semibold uppercase tracking-widest text-muted"
+              >
                 {h}
               </th>
             ))}
           </tr>
         </thead>
-        <tbody className="divide-y divide-line">{children}</tbody>
+        <tbody className="divide-y divide-line/60">{children}</tbody>
       </table>
     </div>
   );
@@ -37,7 +40,10 @@ export function DataRow({
   return (
     <tr
       onClick={onClick}
-      className={cn(onClick && "cursor-pointer hover:bg-cyan-50/40")}
+      className={cn(
+        "transition-colors",
+        onClick && "cursor-pointer",
+      )}
     >
       {children}
     </tr>
@@ -48,13 +54,23 @@ export function Td({
   children,
   className,
   mono,
+  align,
 }: {
   children: React.ReactNode;
   className?: string;
   mono?: boolean;
+  align?: "left" | "right" | "center";
 }) {
   return (
-    <td className={cn("px-4 py-3 text-ink", mono && "mono text-sm", className)}>
+    <td
+      className={cn(
+        "px-5 py-3.5 text-ink",
+        mono && "mono text-sm tabular-nums",
+        align === "right" && "text-right",
+        align === "center" && "text-center",
+        className,
+      )}
+    >
       {children}
     </td>
   );

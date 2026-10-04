@@ -1,13 +1,14 @@
 "use client";
 
+import { AlertTriangle, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Skeleton } from "@/components/ui/Skeleton";
 
 export function LoadingBlock({ rows = 3 }: { rows?: number }) {
   return (
-    <div className="space-y-3">
+    <div className="space-y-4 animate-page-enter">
       {Array.from({ length: rows }).map((_, i) => (
-        <Skeleton key={i} className="h-16 w-full" />
+        <Skeleton key={i} className="h-20 w-full rounded-card" />
       ))}
     </div>
   );
@@ -21,9 +22,13 @@ export function ErrorRetry({
   onRetry: () => void;
 }) {
   return (
-    <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-5">
-      <p className="text-sm font-medium text-danger">{message}</p>
-      <Button variant="ghost" className="mt-3 min-h-9" onClick={onRetry}>
+    <div className="card border-danger/20 px-6 py-8 text-center animate-page-enter">
+      <div className="mx-auto mb-3 flex h-10 w-10 items-center justify-center rounded-full bg-danger-bg">
+        <AlertTriangle className="h-5 w-5 text-danger" />
+      </div>
+      <p className="text-sm font-semibold text-danger">{message}</p>
+      <Button variant="ghost" className="mx-auto mt-4 min-h-9" onClick={onRetry}>
+        <RefreshCw className="h-3.5 w-3.5" />
         Retry
       </Button>
     </div>

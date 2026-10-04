@@ -7,11 +7,13 @@ export function KpiStat({
   label,
   value,
   hint,
+  trend,
   className,
 }: {
   label: string;
   value: string | number;
   hint?: string;
+  trend?: { direction: "up" | "down" | "flat"; text: string } | null;
   className?: string;
 }) {
   const [ready, setReady] = useState(false);
@@ -23,13 +25,26 @@ export function KpiStat({
   return (
     <div
       className={cn(
-        "rounded-xl border border-line bg-surface/90 p-4",
+        "card kpi-card p-5",
         ready && "animate-metric-settle",
         className,
       )}
     >
-      <p className="text-xs font-medium uppercase tracking-wide text-muted">{label}</p>
-      <p className="mono mt-2 text-2xl font-medium text-ink">{value}</p>
+      <p className="text-[11px] font-semibold uppercase tracking-widest text-muted">
+        {label}
+      </p>
+      <p className="kpi-value mt-2 text-3xl text-ink">{value}</p>
+      {trend ? (
+        <p
+          className={cn(
+            "mt-1.5 text-xs font-medium",
+            trend.direction === "up" ? "text-ok" : trend.direction === "down" ? "text-danger" : "text-muted",
+          )}
+        >
+          {trend.direction === "up" ? "↑" : trend.direction === "down" ? "↓" : "→"}{" "}
+          {trend.text}
+        </p>
+      ) : null}
       {hint ? <p className="mt-1 text-xs text-muted">{hint}</p> : null}
     </div>
   );

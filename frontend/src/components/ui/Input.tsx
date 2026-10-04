@@ -9,7 +9,7 @@ export function Label({
   htmlFor?: string;
 }) {
   return (
-    <label htmlFor={htmlFor} className="mb-1.5 block text-sm font-medium text-ink">
+    <label htmlFor={htmlFor} className="mb-2 block text-sm font-semibold text-ink">
       {children}
     </label>
   );
@@ -22,7 +22,7 @@ export function Input({
   return (
     <input
       className={cn(
-        "min-h-11 w-full rounded-lg border border-line bg-surface px-3 text-sm text-ink outline-none transition focus:border-brand focus:ring-2 focus:ring-accent/30",
+        "min-h-12 w-full rounded-xl border border-line bg-surface px-4 text-sm text-ink placeholder:text-muted outline-none transition-all duration-150 focus:border-brand focus:ring-2 focus:ring-brand/20 focus:shadow-sm",
         className,
       )}
       {...props}

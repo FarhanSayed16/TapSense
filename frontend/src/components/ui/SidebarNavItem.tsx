@@ -27,13 +27,16 @@ export function SidebarNavItem({
       href={href}
       onClick={onNavigate}
       className={cn(
-        "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
+        "sidebar-nav-item flex items-center gap-3 rounded-lg px-3 py-2.5 text-[13px] font-medium",
         active
-          ? "bg-cyan-50 text-brand-strong"
-          : "text-muted hover:bg-white/70 hover:text-ink",
+          ? "sidebar-nav-active"
+          : "text-ink-secondary hover:text-ink",
       )}
     >
-      <Icon className="h-4 w-4 shrink-0" strokeWidth={1.75} />
+      <Icon
+        className={cn("h-[18px] w-[18px] shrink-0", active ? "text-brand" : "text-muted")}
+        strokeWidth={active ? 2 : 1.75}
+      />
       {label}
     </Link>
   );
