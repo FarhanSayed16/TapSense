@@ -12,6 +12,7 @@ class TelemetryIn(BaseModel):
     message_id: str | None = None
     wifi_rssi: int | None = None
     uptime_ms: int | None = None
+    firmware_version: str | None = None
 
 
 class TelemetryResult(BaseModel):

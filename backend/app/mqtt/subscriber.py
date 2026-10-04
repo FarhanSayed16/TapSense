@@ -94,8 +94,14 @@ def _mqtt_thread_main() -> None:
 
 
 def _idle_thread_main() -> None:
+    from app.services.alerts import sweep_alerts
+    from app.services.analytics import reconcile_daily_from_sessions
     from app.services.ingest import close_idle_sessions
+    from app.services.leaderboard import refresh_all_boards
 
+    stale_ticks = 0
+    reconcile_ticks = 0
+    board_ticks = 0
     while not _stop.is_set():
         try:
             if _loop is not None:
@@ -107,6 +113,52 @@ def _idle_thread_main() -> None:
                 closed = fut.result(timeout=10)
                 if closed:
                     logger.info("closed %s idle sessions", closed)
+
+                # ~ every 60s (30 × 2s) sweep stale + leak-suspect alerts
+                stale_ticks += 1
+                if stale_ticks >= 30:
+
+                    async def _stale():
+                        return await sweep_alerts()
+
+                    fut2 = asyncio.run_coroutine_threadsafe(_stale(), _loop)
+                    sweep = fut2.result(timeout=15)
+                    stale_ticks = 0
+                    if sweep.get("open_count"):
+                        logger.info(
+                            "alerts open=%s stale=%s leak=%s",
+                            sweep.get("open_count"),
+                            sweep.get("stale_count"),
+                            sweep.get("leak_count"),
+                        )
+
+                # ~ every 6h rebuild yesterday's daily aggregates from closed sessions
+                reconcile_ticks += 1
+                if reconcile_ticks >= 10800:
+
+                    async def _reconcile():
+                        return await reconcile_daily_from_sessions(None)
+
+                    fut3 = asyncio.run_coroutine_threadsafe(_reconcile(), _loop)
+                    result = fut3.result(timeout=60)
+                    reconcile_ticks = 0
+                    logger.info(
+                        "daily reconcile date=%s taps=%s",
+                        result.get("date"),
+                        result.get("taps"),
+                    )
+
+                # ~ every 1h refresh leaderboard snapshots for current week
+                board_ticks += 1
+                if board_ticks >= 1800:
+
+                    async def _boards():
+                        return await refresh_all_boards(None)
+
+                    fut4 = asyncio.run_coroutine_threadsafe(_boards(), _loop)
+                    snaps = fut4.result(timeout=60)
+                    board_ticks = 0
+                    logger.info("leaderboard snapshots refreshed=%s", len(snaps))
         except Exception:
             logger.exception("idle session sweep failed")
         _stop.wait(2.0)
