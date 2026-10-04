@@ -6,6 +6,8 @@ export type AuthUser = {
   name: string;
   role: string;
   org_id: string;
+  capabilities?: string[];
+  building_ids?: string[] | null;
 };
 
 export function getToken(): string | null {

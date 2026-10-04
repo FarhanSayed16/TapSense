@@ -46,4 +46,36 @@ export async function apiFetch<T>(
   return res.json() as Promise<T>;
 }
 
+/** Authenticated download for CSV (or other non-JSON) export endpoints. */
+export async function apiDownload(path: string, filename: string): Promise<void> {
+  const headers = new Headers();
+  const token = getToken();
+  if (token) headers.set("Authorization", `Bearer ${token}`);
+
+  const res = await fetch(`${API_URL}${path}`, { headers });
+  if (res.status === 401) {
+    clearToken();
+  }
+  if (!res.ok) {
+    let detail = res.statusText;
+    try {
+      const body = await res.json();
+      detail = body.detail ?? JSON.stringify(body);
+    } catch {
+      /* ignore */
+    }
+    throw new ApiError(res.status, typeof detail === "string" ? detail : "Download failed");
+  }
+
+  const blob = await res.blob();
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+}
+
 export { API_URL };
