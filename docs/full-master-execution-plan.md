@@ -65,7 +65,7 @@ Tap → YF-S201 → ESP32 (liters, sessions, optional display/valve)
 | 17 | Backend B3 + Frontend F3 — leaderboard system | Behavior |
 | 18 | Product Phase 3 — social comparison in the field | Behavior |
 | 19 | Scale-out Wave 2 — more taps / buildings / 1 ESP per tap | Scale |
-| 20 | Backend B4 + Frontend F4 — facilities product layer | Scale |
+| 20 | Backend B4 + Frontend F4 — facilities product layer | **Dev done** |
 | 21 | Notifications, savings narrative, integrations | Scale |
 | 22 | Hardening — security, reliability, retention, QA | Harden |
 | 23 | Product Phase 4 — auto-cutoff valves (optional / gated) | Stretch |
@@ -347,23 +347,24 @@ Tap → YF-S201 → ESP32 (liters, sessions, optional display/valve)
 **Goal:** Isolate effect of **numbers only** on intervention taps.
 
 ### 13.1 Hardware
-- [ ] Live liter counter on Tap B & C only  
-- [ ] Tap A remains sensor-only  
+- [x] Live liter counter on Tap B & C only — LCD + `/visibility` kiosk (optional OLED later)  
+- [x] Tap A remains sensor-only  
 
 ### 13.2 Firmware/UI sync
-- [ ] Display liters match backend sessions within tolerance  
-- [ ] Overview phase pill → “Phase 1 — Visibility”
+- [x] Display path for B/C only (`PRODUCT_PHASE_DISPLAY`) · admin phase toggle  
+- [x] Overview phase pill → “Phase 1 — Visibility” when enabled  
 
 ### 13.3 Run
-- [ ] Collect comparable window (same weekdays vs Phase 0)  
-- [ ] Track % change session volume & long-tail frequency  
+- [ ] Collect comparable window (same weekdays vs Phase 0) — **field later**  
+- [ ] Track % change session volume & long-tail frequency — **field later**  
 
 ### 13.4 Gate
 - [ ] Even ~5–10% drop (or clear null result) documented before adding color  
-- [ ] If null: redesign display before Phase 16
+- [ ] If null: redesign display before Phase 16  
 
 ### Phase 13 gate
-- [ ] Phase 1 report note written
+- [ ] Phase 1 report note written — template: `docs/phase-13-report-template.md`  
+- [x] *Dev path:* `docs/phase-13-visibility.md` · `docs/phase-13-status.md`
 
 ---
 
@@ -372,18 +373,19 @@ Tap → YF-S201 → ESP32 (liters, sessions, optional display/valve)
 **Goal:** Science endpoints so reports are not spreadsheet chaos.
 
 ### 14.1 Features
-- [ ] Phase date-range tags per zone/taps  
-- [ ] Phase comparison API (Δ liters, Δ session, Δ long-tail)  
-- [ ] Control vs intervention split aggregates  
-- [ ] CSV/JSON export  
-- [ ] Stale-device alert records (basic)
+- [x] Phase date-range tags per zone/taps  
+- [x] Phase comparison API (Δ liters, Δ session, Δ long-tail)  
+- [x] Control vs intervention split aggregates  
+- [x] CSV/JSON export  
+- [x] Stale-device alert records (basic)
 
 ### 14.2 Jobs
-- [ ] Nightly daily-rollup reconcile  
-- [ ] Periodic stale check worker
+- [x] Nightly daily-rollup reconcile *(admin endpoint + ~6h worker; cron optional)*  
+- [x] Periodic stale check worker
 
 ### Phase 14 gate
-- [ ] Export + compare endpoints verified on real Phase 0/1 data
+- [x] *Dev path:* `docs/phase-14-analytics.md` · `docs/phase-14-status.md` · `/reports`  
+- [ ] Export + compare verified on real Phase 0/1 field windows *(after field baseline)*
 
 ---
 
@@ -392,19 +394,21 @@ Tap → YF-S201 → ESP32 (liters, sessions, optional display/valve)
 **Goal:** Admins can run the pilot scientifically from the app.
 
 ### 15.1 Nav unlock
-- [ ] Phases · Compare · Control · Reports (under Behavior / Facilities as planned)
+- [x] Reports nav entry *(Phase 14 early surface)*  
+- [x] Phases · Compare · Control dedicated nav *(Science group)*
 
 ### 15.2 Pages
-- [ ] `/app/phases` — timeline 0–3, date ranges  
-- [ ] `/app/compare` — phase deltas + “pilot N=” honesty banner  
-- [ ] `/app/control` — control vs cohort  
-- [ ] `/app/reports` — generate/download packs  
+- [x] `/phases` — timeline 0–3, date ranges  
+- [x] `/compare` — phase deltas + “pilot N=” honesty banner  
+- [x] `/control` — control vs cohort  
+- [x] `/reports` — generate/download packs  
 
 ### 15.3 Overview upgrades
-- [ ] Phase-aware badges · links into compare  
+- [x] Phase-aware badges · links into compare  
 
 ### Phase 15 gate
-- [ ] Non-engineer teammate can produce Phase 0 vs 1 summary from UI
+- [x] *Dev path:* `docs/phase-15-science-ui.md` · `docs/phase-15-status.md`  
+- [ ] Non-engineer teammate produces Phase 0 vs 1 summary on **real field windows**
 
 ---
 
@@ -413,23 +417,24 @@ Tap → YF-S201 → ESP32 (liters, sessions, optional display/valve)
 **Goal:** Wordless green→amber→red cue; impersonal totals.
 
 ### 16.1 Config (backend Threshold module)
-- [ ] Per-tap threshold from Phase 0/1 median (or configured)  
-- [ ] Band definitions stored · no guilt strings in config  
+- [x] Per-tap threshold from Phase 0/1 median (or configured)  
+- [x] Band definitions stored · no guilt strings in config  
 
 ### 16.2 Firmware
-- [ ] LED (or equivalent) on B/C only · color + brief pulse · no text scold  
-- [ ] Optional OLED impersonal daily total  
+- [x] LED (or equivalent) on B/C only · color + brief pulse · no text scold *(LCD G/A/R; optional WS2812)*  
+- [ ] Optional OLED impersonal daily total *(deferred — LCD/visibility cover totals)*  
 
 ### 16.3 Frontend
-- [ ] `/app/thresholds` editor + preview bands  
-- [ ] Tap detail shows threshold overlay on charts  
+- [x] `/thresholds` editor + preview bands  
+- [x] Tap detail shows threshold overlay on charts  
 
 ### 16.4 Run + measure
 - [ ] Collect marginal effect vs Phase 1  
 - [ ] Document result  
 
 ### Phase 16 gate
-- [ ] Phase 2 note done; control still un-cued
+- [x] *Dev path:* `docs/phase-16-color.md` · `docs/phase-16-status.md` · report template  
+- [ ] Phase 2 field note done; control still un-cued
 
 ---
 
@@ -438,21 +443,22 @@ Tap → YF-S201 → ESP32 (liters, sessions, optional display/valve)
 **Goal:** Social-norm infrastructure ready before public display.
 
 ### 17.1 Backend
-- [ ] Floor/zone/building weekly aggregates  
-- [ ] Leaderboard snapshot job  
-- [ ] Public read API (limited fields)  
-- [ ] Exclude control from competitive ranking option  
+- [x] Floor/zone/building weekly aggregates  
+- [x] Leaderboard snapshot job  
+- [x] Public read API (limited fields)  
+- [x] Exclude control from competitive ranking option  
 
 ### 17.2 Frontend admin
-- [ ] `/app/leaderboard` configure scope/week  
-- [ ] `/app/leaderboard/live` internal full-screen preview  
+- [x] `/leaderboard` configure scope/week  
+- [x] `/leaderboard/live` internal full-screen preview  
 
 ### 17.3 Public board
-- [ ] `/leaderboard/public/[boardId]` — large type, auto-refresh, brand persistent, calm rank motion  
-- [ ] No shame copy; recognition for lowest use framed positively  
+- [x] `/leaderboard/public/[boardId]` — large type, auto-refresh, brand persistent, calm rank motion  
+- [x] No shame copy; recognition for lowest use framed positively  
 
 ### Phase 17 gate
-- [ ] Board renders real weekly ranks in kiosk/TV test
+- [x] *Dev path:* `docs/phase-17-leaderboard.md` · `docs/phase-17-status.md`  
+- [ ] Board renders real weekly ranks in kiosk/TV test *(open public URL on TV)*
 
 ---
 
@@ -461,15 +467,16 @@ Tap → YF-S201 → ESP32 (liters, sessions, optional display/valve)
 **Goal:** Strongest literature lever live on campus.
 
 ### 18.1 Physical + digital
-- [ ] Place physical or screen board in common area  
-- [ ] Weekly update cadence locked  
-- [ ] Light recognition for lowest-consuming block/floor  
+- [ ] Place physical or screen board in common area *(field)*  
+- [x] Weekly update cadence locked *(dev: `/social` lock + API)*  
+- [x] Light recognition for lowest-consuming block/floor *(board + recognition label)*  
 
 ### 18.2 Measure
 - [ ] Marginal drop vs Phase 2 documented  
-- [ ] Three-layer attribution note: visibility → color → social  
+- [x] Three-layer attribution note helper *(API + `/social`; fill after field windows)*  
 
 ### Phase 18 gate
+- [x] *Dev path:* `docs/phase-18-social.md` · `docs/phase-18-status.md` · report template  
 - [ ] Phase 3 field report complete (core behavior pilot scientifically closed)
 
 ---
@@ -479,26 +486,27 @@ Tap → YF-S201 → ESP32 (liters, sessions, optional display/valve)
 **Goal:** Leave 3-tap washroom architecture without breaking schema.
 
 ### 19.1 Architecture shift
-- [ ] Prefer **1 ESP per tap** for new installs  
-- [ ] Device registry supports many devices  
-- [ ] Location tree: add floors/buildings/zones as needed  
+- [x] Prefer **1 ESP per tap** for new installs  
+- [x] Device registry supports many devices  
+- [x] Location tree: add floors/buildings/zones as needed  
 
 ### 19.2 Hardware Wave 2
 - [ ] Order/install additional taps per backlog from Phase 1.3  
-- [ ] Keep ≥1 control tap somewhere in study design  
+- [x] Keep ≥1 control tap somewhere in study design *(tap_a remains control)*  
 - [ ] Calibrate each new tap · IP boxes · WiFi checks  
 
 ### 19.3 Firmware fleet
-- [ ] Shared firmware with per-device config (tap_id, wifi, certs)  
-- [ ] Version field reported to backend  
+- [x] Shared firmware with per-device config (tap_id, wifi, certs)  
+- [x] Version field reported to backend  
 
 ### 19.4 Frontend/Backend enablement
-- [ ] Location explorer populated  
-- [ ] Building/Floor/Zone dashboards usable  
-- [ ] Context switcher (campus/building)  
+- [x] Location explorer populated  
+- [x] Building/Floor/Zone dashboards usable  
+- [x] Context switcher (campus/building)  
 
 ### Phase 19 gate
-- [ ] ≥2 zones or ≥2 buildings reporting cleanly OR documented single-building multi-floor expansion done as planned
+- [x] *Dev path:* `docs/phase-19-scale.md` · `seed_wave2` multi-floor/zones · `/locations` `/devices`  
+- [ ] ≥2 zones or ≥2 buildings reporting cleanly in the **field** OR documented expansion after hardware install
 
 ---
 
@@ -507,22 +515,22 @@ Tap → YF-S201 → ESP32 (liters, sessions, optional display/valve)
 **Goal:** Something facilities would keep after the student project ends.
 
 ### 20.1 Backend
-- [ ] Org roles: org_admin / facilities / viewer enforced  
-- [ ] Multi-building scoped queries  
-- [ ] Alert entity for offline + leak-like patterns (basic rules OK)  
-- [ ] Feature flags per org  
+- [x] Org roles: org_admin / facilities / viewer enforced  
+- [x] Multi-building scoped queries  
+- [x] Alert entity for offline + leak-like patterns (basic rules OK)  
+- [x] Feature flags per org  
 
 ### 20.2 Frontend
-- [ ] `/app/locations` tree  
-- [ ] Building/Floor/Zone pages  
-- [ ] `/app/devices` fleet + device detail  
-- [ ] `/app/alerts` ack/resolve  
-- [ ] `/app/settings/members` invites  
-- [ ] `/app/settings/organization` + feature flags UI  
-- [ ] Role-based nav hiding  
+- [x] `/app/locations` tree  
+- [x] Building/Floor/Zone pages  
+- [x] `/app/devices` fleet + device detail  
+- [x] `/app/alerts` ack/resolve  
+- [x] `/app/settings/members` invites  
+- [x] `/app/settings/organization` + feature flags UI  
+- [x] Role-based nav hiding  
 
 ### Phase 20 gate
-- [ ] Facilities role can monitor without seeing admin-only controls
+- [x] Facilities role can monitor without seeing admin-only controls (dev verified via caps + nav)
 
 ---
 
@@ -662,32 +670,41 @@ Tap → YF-S201 → ESP32 (liters, sessions, optional display/valve)
 
 ## Global Status Board
 
-| Phase | Status | Owner | Date done |
-|---|---|---|---|
-| 1 Permissions & design lock | | | |
-| 2 Hardware procurement | | | |
-| 3 Repo & platform | | | |
-| 4 Backend B0 | | | |
-| 5 Backend seed & auth | | | |
-| 6 Backend ingest | | | |
-| 7 Frontend design system | | | |
-| 8 Frontend MVP pages | | | |
-| 9 Firmware bench | | | |
-| 10 Field install Wave 1 | | | |
-| 11 Phase 0 baseline | | | |
-| 12 MVP closeout | | | |
-| 13 Phase 1 visibility | | | |
-| 14 Backend B2 analytics | | | |
-| 15 Frontend F2 science | | | |
-| 16 Phase 2 color thresholds | | | |
-| 17 Leaderboard system | | | |
-| 18 Phase 3 field social | | | |
-| 19 Scale-out Wave 2 | | | |
-| 20 Facilities product layer | | | |
-| 21 Digests & savings | | | |
-| 22 Hardening & QA | | | |
-| 23 Phase 4 valves (opt.) | | | |
-| 24 Project close & handoff | | | |
+**Updated:** 2026-10-04 · Software spine through pilot is largely built; field science gates (calibration, ≥10-day baseline, formal MVP stamp) remain open and can run in parallel with post-MVP **development**.
+
+| Phase | Status | Notes |
+|---|---|---|
+| 1 Permissions & design lock | **Partial** | Site/taps locked in repo docs; written facilities sign-off may still be pending |
+| 2 Hardware procurement | **Done (Wave 1)** | ESP + 3× YF-S201 + LCD + power on bench/board |
+| 3 Repo & platform | **Done** | Monorepo, Atlas, Upstash, conventions |
+| 4 Backend B0 | **Done** | FastAPI health, Mongo, Redis, CORS (Render deploy optional) |
+| 5 Backend seed & auth | **Done** | Hierarchy seed, JWT admin, read APIs |
+| 6 Backend ingest | **Done** | MQTT + HTTP, sessions, dailies, dedupe, simulate |
+| 7 Frontend design system | **Done** | Glacier Ops shell |
+| 8 Frontend MVP pages | **Done (local)** | Overview/Taps/Sessions/Device/Settings + showcase polish; Vercel optional |
+| 9 Firmware bench | **Done** | Pilot firmware live Wi‑Fi → dashboard; LCD status |
+| 10 Field install Wave 1 | **Partial / defer cal** | Live path works; **bucket calibration + 24h sealed field gate later** |
+| 11 Phase 0 baseline | **Not started (field)** | Protocol/tools ready; **≥10-day silent run later** |
+| 12 MVP closeout | **Software-ready / stamp open** | Closeout docs exist; formal “MVP closed” after 10–11 field |
+| 13 Phase 1 visibility | **Dev done / field later** | API phase toggle, `/visibility`, LCD B/C only; science report after baseline |
+| 14 Backend B2 analytics | **Dev done / field verify later** | Phase windows, compare, control split, CSV/JSON, stale alerts, reconcile; `/reports` |
+| 15 Frontend F2 science | **Dev done / field verify later** | Science nav + `/phases` `/compare` `/control` `/reports`; Overview links |
+| 16 Phase 2 color thresholds | **Dev done / field later** | Thresholds API/UI, visibility bands, firmware G/A/R + optional WS2812 |
+| 17 Leaderboard system | **Dev done / kiosk test open** | Weekly aggregates, snapshots, admin + public board |
+| 18 Phase 3 field social | **Dev done / field later** | `/social` cadence lock, Phase 3 toggle, attribution helper, P3 firmware status |
+| 19 Scale-out Wave 2 | **Dev done / field hardware later** | Location tree, fleet registry, single-tap firmware, seed_wave2 |
+| 20 Facilities product layer | **Dev done / field ops later** | Roles, scoped queries, alerts ack/resolve, feature flags, members/org UI |
+| 21 Digests & savings | **Queued** | Telegram etc. |
+| 22 Hardening & QA | **Queued** | |
+| 23 Phase 4 valves (opt.) | **Deferred unless gated** | Extra permission |
+| 24 Project close & handoff | **Queued** | |
+
+### Parallel tracks (allowed)
+
+| Track | What |
+|---|---|
+| **A — Development** | Phase 13–20 software done; next is **Phase 21** digests & savings when ready. Do **not** claim Phase 1–3 science results until real field windows exist. |
+| **B — Field (later)** | Calibration (10) → silent baseline (11) → sign MVP closeout (12). |
 
 ---
 
