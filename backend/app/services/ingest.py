@@ -14,9 +14,6 @@ from app.schemas.ingest import TelemetryIn, TelemetryResult
 
 logger = logging.getLogger("tapsense.ingest")
 
-VALID_TAPS = {"tap_a", "tap_b", "tap_c"}
-
-
 def _now() -> datetime:
     return datetime.now(timezone.utc)
 
@@ -56,19 +53,21 @@ async def process_telemetry(payload: TelemetryIn) -> TelemetryResult:
 
     # Heartbeat / status — update last-seen only
     if payload.type == "status" or (payload.tap_id is None and payload.liters_delta == 0 and not payload.session_end):
-        await db.devices.update_one(
-            {"id": payload.device_id},
-            {
-                "$set": {
-                    "last_seen_at": _now(),
-                    "wifi_rssi": payload.wifi_rssi,
-                    "updated_at": _now(),
-                }
-            },
-        )
+        status_set: dict[str, Any] = {
+            "last_seen_at": _now(),
+            "wifi_rssi": payload.wifi_rssi,
+            "updated_at": _now(),
+        }
+        # Optional firmware version on status heartbeats (fleet tracking)
+        fw = getattr(payload, "firmware_version", None)
+        if fw:
+            status_set["firmware_version"] = fw
+        await db.devices.update_one({"id": payload.device_id}, {"$set": status_set})
         return TelemetryResult(accepted=True, detail="status")
 
-    if payload.tap_id not in VALID_TAPS:
+    # Wave-2+: any registered tap bound to this device (not hard-coded tap_a/b/c)
+    tap_doc = await db.taps.find_one({"id": payload.tap_id}, {"_id": 0, "id": 1})
+    if not tap_doc:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid tap_id")
 
     if payload.tap_id not in set(device.get("tap_ids", [])):
