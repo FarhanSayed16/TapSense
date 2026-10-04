@@ -1,19 +1,30 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { AlertTriangle } from "lucide-react";
 import { Badge } from "@/components/ui/Badge";
 import { DataRow, DataTable, Td } from "@/components/ui/DataTable";
 import { EmptyState } from "@/components/ui/EmptyState";
-import { Input, Label } from "@/components/ui/Input";
+import { Label } from "@/components/ui/Input";
 import { ErrorRetry, LoadingBlock } from "@/components/ui/QueryState";
+import { cn } from "@/lib/cn";
 import { useApiData } from "@/lib/useApiData";
 import {
   formatDuration,
   formatLiters,
+  formatRelative,
   formatWhen,
   Session,
   Tap,
+  tapLabel,
 } from "@/lib/types";
+
+function durationTone(seconds: number | null | undefined): string {
+  if (seconds == null || !Number.isFinite(seconds)) return "text-muted";
+  if (seconds < 45) return "text-ok";
+  if (seconds < 180) return "text-warn";
+  return "text-danger";
+}
 
 export default function SessionsPage() {
   const [tapId, setTapId] = useState("all");
@@ -49,60 +60,104 @@ export default function SessionsPage() {
     );
   }
 
+  const tapList = taps.data ?? [];
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       <div>
-        <h1 className="text-2xl font-semibold text-ink">Sessions</h1>
-        <p className="mt-1 text-sm text-muted">
-          Chronological flow events across taps — tap-level only, never person-linked.
+        <h1 className="text-[28px] font-bold tracking-tight text-ink">Sessions</h1>
+        <p className="mt-1 text-sm text-ink-secondary">
+          Chronological flow events — tap-level only, never person-linked.
         </p>
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-3">
-        <div>
-          <Label htmlFor="tap">Tap</Label>
-          <select
-            id="tap"
-            className="min-h-11 w-full rounded-lg border border-line bg-surface px-3 text-sm"
-            value={tapId}
-            onChange={(e) => setTapId(e.target.value)}
-          >
-            <option value="all">All taps</option>
-            {(taps.data ?? []).map((t) => (
-              <option key={t.id} value={t.id}>
-                {t.name}
-              </option>
-            ))}
-          </select>
-        </div>
-        <div>
-          <Label htmlFor="from">From</Label>
-          <Input id="from" type="date" value={from} onChange={(e) => setFrom(e.target.value)} />
-        </div>
-        <div>
-          <Label htmlFor="to">To</Label>
-          <Input id="to" type="date" value={to} onChange={(e) => setTo(e.target.value)} />
+      <div className="card p-5">
+        <div className="grid gap-4 sm:grid-cols-3">
+          <div>
+            <Label htmlFor="tap">Tap</Label>
+            <select
+              id="tap"
+              className="min-h-12 w-full rounded-xl border border-line bg-surface px-4 text-sm text-ink outline-none transition-all duration-150 focus:border-brand focus:ring-2 focus:ring-brand/20"
+              value={tapId}
+              onChange={(e) => setTapId(e.target.value)}
+            >
+              <option value="all">All taps</option>
+              {tapList.map((t) => (
+                <option key={t.id} value={t.id}>
+                  {t.name}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <Label htmlFor="from">From</Label>
+            <input
+              id="from"
+              type="date"
+              value={from}
+              onChange={(e) => setFrom(e.target.value)}
+              className="min-h-12 w-full rounded-xl border border-line bg-surface px-4 text-sm text-ink outline-none transition-all duration-150 focus:border-brand focus:ring-2 focus:ring-brand/20"
+            />
+          </div>
+          <div>
+            <Label htmlFor="to">To</Label>
+            <input
+              id="to"
+              type="date"
+              value={to}
+              onChange={(e) => setTo(e.target.value)}
+              className="min-h-12 w-full rounded-xl border border-line bg-surface px-4 text-sm text-ink outline-none transition-all duration-150 focus:border-brand focus:ring-2 focus:ring-brand/20"
+            />
+          </div>
         </div>
       </div>
 
       {filtered.length === 0 ? (
         <EmptyState
-          title="No sessions in this range"
-          description="Early Phase 0 days can be quiet — or widen the filters / run simulate_ingest."
+          title="No sessions match your filters"
+          description="Try adjusting the date range, or open a faucet during the demo."
+          icon="water"
         />
       ) : (
         <DataTable
-          headers={["Start", "End", "Duration", "Liters", "Tap", "Long-tail"]}
+          headers={["When", "Tap", "Liters", "Duration", "Status", ""]}
         >
           {filtered.map((s) => (
             <DataRow key={s.id}>
-              <Td>{formatWhen(s.started_at)}</Td>
-              <Td>{formatWhen(s.ended_at)}</Td>
-              <Td mono>{formatDuration(s.duration_seconds)}</Td>
-              <Td mono>{formatLiters(s.liters)}</Td>
-              <Td mono>{s.tap_id}</Td>
               <Td>
-                {s.is_long_tail ? <Badge kind="phase">yes</Badge> : "—"}
+                <div className="flex flex-col">
+                  <span className="text-ink">{formatWhen(s.started_at)}</span>
+                  <span className="text-xs text-muted">{formatRelative(s.started_at)}</span>
+                </div>
+              </Td>
+              <Td>
+                <span className="font-medium">{tapLabel(tapList, s.tap_id)}</span>
+              </Td>
+              <Td mono align="right">{formatLiters(s.liters)}</Td>
+              <Td align="right">
+                <span className={cn("mono text-sm font-medium", durationTone(s.duration_seconds))}>
+                  {s.ended_at ? formatDuration(s.duration_seconds) : "in progress"}
+                </span>
+              </Td>
+              <Td>
+                {s.ended_at ? (
+                  <span className="text-muted">Ended</span>
+                ) : (
+                  <Badge kind="status">Flowing</Badge>
+                )}
+              </Td>
+              <Td>
+                {s.is_long_tail ? (
+                  <span
+                    className="inline-flex items-center gap-1 text-warn"
+                    title="Long-tail session — unusually long open flow"
+                  >
+                    <AlertTriangle className="h-4 w-4" />
+                    <span className="sr-only">Long-tail</span>
+                  </span>
+                ) : (
+                  <span className="text-muted">—</span>
+                )}
               </Td>
             </DataRow>
           ))}
