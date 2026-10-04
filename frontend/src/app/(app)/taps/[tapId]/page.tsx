@@ -23,6 +23,7 @@ import {
   formatWhen,
   Session,
   Tap,
+  tapWeekTrend,
 } from "@/lib/types";
 
 export default function TapDetailPage() {
@@ -40,7 +41,10 @@ export default function TapDetailPage() {
   const sessions = useApiData<Session[]>(
     tapId ? `/api/v1/sessions?tap_id=${tapId}&limit=30` : null,
   );
-  const device = useApiData<Device>("/api/v1/devices/device_01");
+  const devices = useApiData<Device[]>("/api/v1/devices", { refreshMs: 5000 });
+  const thresholds = useApiData<{
+    taps: Record<string, { session_liters_threshold: number; enabled: boolean; is_control: boolean }>;
+  }>("/api/v1/thresholds");
 
   const today = new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Kolkata" });
   const weekStart = (() => {
@@ -48,6 +52,13 @@ export default function TapDetailPage() {
     d.setDate(d.getDate() - 6);
     return d.toLocaleDateString("en-CA", { timeZone: "Asia/Kolkata" });
   })();
+
+  const hostDevice = useMemo(() => {
+    const list = devices.data ?? [];
+    const fromTap = list.find((d) => d.id === tap.data?.device_id);
+    if (fromTap) return fromTap;
+    return list.find((d) => d.tap_ids?.includes(tapId)) ?? null;
+  }, [devices.data, tap.data?.device_id, tapId]);
 
   const stats = useMemo(() => {
     let todayL = 0;
@@ -65,13 +76,10 @@ export default function TapDetailPage() {
     return { todayL, weekL, avg, longTail };
   }, [daily.data, sessions.data, today, weekStart]);
 
+  // Pad to full 7/14-day strip so a single active day doesn't look broken.
   const chartPoints = useMemo(
-    () =>
-      (daily.data ?? [])
-        .slice()
-        .sort((a, b) => a.date.localeCompare(b.date))
-        .map((r) => ({ date: r.date, liters: r.liters })),
-    [daily.data],
+    () => tapWeekTrend(daily.data ?? [], tapId, days),
+    [daily.data, tapId, days],
   );
 
   if (tap.loading && !tap.data) return <LoadingBlock />;
@@ -83,8 +91,11 @@ export default function TapDetailPage() {
   }
 
   const t = tap.data;
-  const status = device.data?.status ?? "unknown";
+  const status = hostDevice?.status ?? "unknown";
   const pplValue = pplDraft || String(t.pulses_per_liter);
+  const tapThreshold = thresholds.data?.taps?.[t.id];
+  const thresholdLiters =
+    !t.is_control && tapThreshold?.enabled ? tapThreshold.session_liters_threshold : null;
 
   async function saveCalibration(e: FormEvent) {
     e.preventDefault();
@@ -119,13 +130,14 @@ export default function TapDetailPage() {
           <p className="text-xs text-muted">
             <Link href="/taps" className="text-brand hover:underline">
               Taps
-            </Link>{" "}
-            / {t.id}
+            </Link>
+            {" · "}
+            {t.name}
           </p>
-          <h1 className="mt-1 text-2xl font-semibold text-ink">{t.name}</h1>
+          <h1 className="mt-1 text-[28px] font-bold tracking-tight text-ink">{t.name}</h1>
           <div className="mt-2 flex flex-wrap items-center gap-2">
             {t.is_control ? <Badge kind="control">Control</Badge> : (
-              <Badge kind="neutral">Intervention</Badge>
+              <Badge kind="info">Intervention</Badge>
             )}
             <StatusDot
               status={
@@ -134,9 +146,14 @@ export default function TapDetailPage() {
             />
           </div>
         </div>
-        <Link href="/device" className="text-sm text-brand hover:underline">
-          Hosted on {t.device_id}
-        </Link>
+        {hostDevice ? (
+          <Link
+            href={`/devices/${hostDevice.id}`}
+            className="text-sm font-medium text-brand hover:underline"
+          >
+            Device · {hostDevice.name}
+          </Link>
+        ) : null}
       </div>
 
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
@@ -167,7 +184,29 @@ export default function TapDetailPage() {
             ))}
           </div>
         </div>
-        <MiniBars points={chartPoints} />
+        <MiniBars points={chartPoints} thresholdLiters={thresholdLiters} />
+        {!t.is_control ? (
+          <p className="mt-3 text-xs text-muted">
+            Phase 2 cue threshold:{" "}
+            {thresholdLiters != null ? (
+              <>
+                {thresholdLiters.toFixed(2)} L · edit on{" "}
+                <Link href="/thresholds" className="text-brand underline-offset-2 hover:underline">
+                  Thresholds
+                </Link>
+              </>
+            ) : (
+              <>
+                not set · configure on{" "}
+                <Link href="/thresholds" className="text-brand underline-offset-2 hover:underline">
+                  Thresholds
+                </Link>
+              </>
+            )}
+          </p>
+        ) : (
+          <p className="mt-3 text-xs text-muted">Control tap — never receives color cues.</p>
+        )}
       </section>
 
       <section className="rounded-xl border border-line bg-surface/90 p-4">
