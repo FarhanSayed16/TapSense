@@ -1,48 +1,246 @@
-@import url("https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Outfit:wght@500;600;700&family=Sora:wght@400;500;600&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Outfit:wght@500;600;700;800&family=Sora:wght@400;500;600&display=swap");
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 :root {
-  --bg: #eef3f6;
+  /* ── Primary Palette ── */
+  --bg: #f0f4f8;
+  --bg-subtle: #e8eef4;
   --surface: #ffffff;
-  --ink: #12263a;
-  --muted: #5b6b7c;
-  --brand: #0e7490;
-  --brand-strong: #155e75;
-  --accent: #2dd4bf;
-  --line: #d5dee7;
-  --ok: #059669;
-  --warn: #d97706;
-  --danger: #dc2626;
+  --surface-elevated: #fafcfe;
+  --ink: #0f172a;
+  --ink-secondary: #475569;
+  --muted: #94a3b8;
+  --line: #e2e8f0;
+
+  /* ── Brand (Water-Inspired Deep Teal) ── */
+  --brand: #0891b2;
+  --brand-strong: #0e7490;
+  --brand-800: #155e75;
+  --brand-soft: #cffafe;
+  --brand-wash: #ecfeff;
+
+  /* ── Accent ── */
+  --accent: #06b6d4;
+
+  /* ── Semantic ── */
+  --ok: #10b981;
+  --ok-bg: #d1fae5;
+  --warn: #f59e0b;
+  --warn-bg: #fef3c7;
+  --danger: #ef4444;
+  --danger-bg: #fee2e2;
+  --info: #3b82f6;
+  --info-bg: #dbeafe;
+
+  /* ── Data ── */
   --control: #64748b;
+  --leaderboard-gold: #c9a84c;
+
+  /* ── Chart ── */
+  --chart-primary: #0891b2;
+  --chart-secondary: #06b6d4;
+  --chart-control: #64748b;
+  --chart-fill: rgba(8, 145, 178, 0.12);
+  --chart-grid: #e2e8f0;
+
+  /* ── Threshold ── */
+  --threshold-green: #10b981;
+  --threshold-amber: #f59e0b;
+  --threshold-red: #ef4444;
 }
 
 body {
   color: var(--ink);
-  background:
-    radial-gradient(1100px 520px at -5% -8%, rgba(45, 212, 191, 0.2), transparent 55%),
-    linear-gradient(155deg, #eef3f6 0%, #e2eef4 42%, #eef3f6 100%);
+  background: var(--bg);
+  background-image:
+    radial-gradient(1200px 600px at -5% -8%, rgba(8, 145, 178, 0.08), transparent 55%),
+    linear-gradient(160deg, #f0f4f8 0%, #e6eef6 50%, #f0f4f8 100%);
+  background-attachment: fixed;
   font-family: "Sora", system-ui, sans-serif;
   min-height: 100vh;
 }
 
-h1,
-h2,
-h3,
-.brand {
+h1, h2, h3, .brand {
   font-family: "Outfit", system-ui, sans-serif;
 }
 
+/* Monospace restricted to numeric data in tables */
 .mono {
   font-family: "IBM Plex Mono", ui-monospace, monospace;
 }
 
+/* ── KPI Hero Numbers (Outfit, not monospace) ── */
+.kpi-value {
+  font-family: "Outfit", system-ui, sans-serif;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+/* ── Card System ── */
+.card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04), 0 1px 2px rgba(0, 0, 0, 0.03);
+  transition: box-shadow 180ms ease, border-color 180ms ease;
+}
+
+.card:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06), 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+.card-interactive:hover {
+  border-color: var(--brand);
+}
+
+/* ── KPI Card Top Accent ── */
+.kpi-card {
+  position: relative;
+  overflow: hidden;
+}
+
+.kpi-card::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, var(--brand-soft), var(--brand));
+  border-radius: 12px 12px 0 0;
+}
+
+/* ── Sidebar ── */
+.sidebar {
+  background: var(--bg-subtle);
+  border-right: 1px solid var(--line);
+}
+
+.sidebar-nav-active {
+  background: var(--brand-wash);
+  color: var(--brand-strong);
+  border-left: 3px solid var(--brand);
+  font-weight: 600;
+}
+
+.sidebar-nav-item {
+  transition: background-color 150ms ease, color 150ms ease;
+  border-left: 3px solid transparent;
+}
+
+.sidebar-nav-item:hover {
+  background: rgba(255, 255, 255, 0.6);
+  color: var(--ink);
+}
+
+/* ── Data Tables ── */
+.data-table tbody tr:nth-child(even) {
+  background: var(--surface-elevated);
+}
+
+.data-table tbody tr {
+  transition: background-color 100ms ease;
+}
+
+.data-table tbody tr:hover {
+  background: var(--brand-wash);
+}
+
+.data-table thead {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: var(--surface);
+  border-bottom: 2px solid var(--line);
+}
+
+/* ── Badge Filled Variants ── */
+.badge-online {
+  background: var(--ok-bg);
+  color: #065f46;
+  border: 1px solid rgba(16, 185, 129, 0.2);
+}
+
+.badge-warn {
+  background: var(--warn-bg);
+  color: #92400e;
+  border: 1px solid rgba(245, 158, 11, 0.2);
+}
+
+.badge-danger {
+  background: var(--danger-bg);
+  color: #991b1b;
+  border: 1px solid rgba(239, 68, 68, 0.2);
+}
+
+.badge-info {
+  background: var(--info-bg);
+  color: #1e40af;
+  border: 1px solid rgba(59, 130, 246, 0.2);
+}
+
+.badge-phase {
+  background: var(--brand);
+  color: white;
+  border: 1px solid transparent;
+}
+
+.badge-control {
+  background: #f1f5f9;
+  color: var(--control);
+  border: 1px solid #cbd5e1;
+}
+
+/* ── Button Secondary Variant ── */
+.btn-secondary {
+  background: var(--brand-wash);
+  color: var(--brand-strong);
+  border: 1px solid rgba(8, 145, 178, 0.15);
+  transition: background-color 150ms ease;
+}
+
+.btn-secondary:hover {
+  background: var(--brand-soft);
+}
+
+/* ── Callout (replaces yellow warning banners) ── */
+.callout {
+  border-left: 4px solid var(--info);
+  background: rgba(59, 130, 246, 0.06);
+  border-radius: 0 8px 8px 0;
+  padding: 12px 16px;
+}
+
+.callout-warn {
+  border-left-color: var(--warn);
+  background: rgba(245, 158, 11, 0.06);
+}
+
+/* ── Scrollbar Styling ── */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--line);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--muted);
+}
+
+/* ── Reduced Motion ── */
 @media (prefers-reduced-motion: reduce) {
-  *,
-  *::before,
-  *::after {
+  *, *::before, *::after {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
