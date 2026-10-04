@@ -60,6 +60,24 @@ const int PIN_LCD_SDA = 21;
 const int PIN_LCD_SCL = 22;
 const uint32_t LCD_SWITCH_MS = 2000;
 
+// Product phase display (phase-13 / phase-16 / phase-18 docs)
+// 0 = Phase 0 silent — LCD status/IP only (never liters)
+// 1 = Phase 1 — LCD Tap B & C liters only (NEVER Tap A / control)
+// 2 = Phase 2 — same + wordless green/amber/red band (LCD letter + optional WS2812)
+// 3 = Phase 3 — social field live: B/C liters + color band + P3 SOCIAL status (board is separate)
+const int PRODUCT_PHASE_DISPLAY = 1;
+
+// Phase 2 session thresholds (liters) — match /thresholds admin values after suggest
+const float COLOR_THRESHOLD_B = 1.5f;
+const float COLOR_THRESHOLD_C = 1.5f;
+const float COLOR_GREEN_MAX_RATIO = 1.0f;   // < 1.0× → green
+const float COLOR_AMBER_MAX_RATIO = 1.5f;   // < 1.5× → amber, else red
+
+// Optional WS2812 on DIN=GPIO13 (B/C cue only). Keep 0 unless Adafruit NeoPixel installed.
+#define USE_COLOR_LED 0
+const int PIN_WS2812 = 13;
+const uint8_t WS2812_COUNT = 1;
+
 // ===================== END SETTINGS =====================
 
 LiquidCrystal_I2C lcd(LCD_ADDRESS, 16, 2);
@@ -67,6 +85,14 @@ uint8_t lcdTapIndex = 0;
 uint32_t lastLcdMs = 0;
 // Unique per power-on so message_id never collides after reboot (API dedupes duplicates)
 uint32_t bootId = 0;
+uint8_t lastColorBandB = 0;  // 0=idle 1=G 2=A 3=R
+uint8_t lastColorBandC = 0;
+uint32_t colorPulseUntilMs = 0;
+
+#if USE_COLOR_LED
+#include <Adafruit_NeoPixel.h>
+Adafruit_NeoPixel colorLed(WS2812_COUNT, PIN_WS2812, NEO_GRB + NEO_KHZ800);
+#endif
 
 struct TapChannel {
   const char *tapId;
@@ -257,21 +283,129 @@ void publishStatus() {
   publishJson(payload);
 }
 
+// Band: 0 idle, 1 green, 2 amber, 3 red — no guilt text
+uint8_t bandForTapIndex(uint8_t idx) {
+  if (idx == 0) return 0;  // control never cued
+  TapChannel &tap = taps[idx];
+  if (!tap.sessionOpen) return 0;
+  float th = (idx == 1) ? COLOR_THRESHOLD_B : COLOR_THRESHOLD_C;
+  if (th <= 0.0f) return 1;
+  float ratio = tap.sessionLiters / th;
+  if (ratio < COLOR_GREEN_MAX_RATIO) return 1;
+  if (ratio < COLOR_AMBER_MAX_RATIO) return 2;
+  return 3;
+}
+
+char bandLetter(uint8_t band) {
+  if (band == 1) return 'G';
+  if (band == 2) return 'A';
+  if (band == 3) return 'R';
+  return '-';
+}
+
+void setColorLed(uint8_t band, bool pulse) {
+#if USE_COLOR_LED
+  uint8_t r = 0, g = 0, b = 0;
+  if (band == 1) { g = pulse ? 180 : 40; }
+  else if (band == 2) { r = pulse ? 180 : 80; g = pulse ? 100 : 40; }
+  else if (band == 3) { r = pulse ? 200 : 60; }
+  colorLed.setPixelColor(0, colorLed.Color(r, g, b));
+  colorLed.show();
+#else
+  (void)band;
+  (void)pulse;
+#endif
+}
+
+void updateColorCue() {
+  if (PRODUCT_PHASE_DISPLAY < 2) {
+    setColorLed(0, false);
+    return;
+  }
+  // Prefer the actively flowing intervention tap; never A
+  uint8_t activeIdx = 0;
+  for (uint8_t i = 1; i <= 2; i++) {
+    if (taps[i].sessionOpen) {
+      activeIdx = i;
+      break;
+    }
+  }
+  uint8_t band = activeIdx ? bandForTapIndex(activeIdx) : 0;
+  if (!activeIdx) {
+    lastColorBandB = 0;
+    lastColorBandC = 0;
+  } else {
+    uint8_t prev = (activeIdx == 1) ? lastColorBandB : lastColorBandC;
+    if (band != prev && band >= 1) {
+      colorPulseUntilMs = millis() + 400;
+    }
+    if (activeIdx == 1) lastColorBandB = band;
+    else lastColorBandC = band;
+  }
+  bool pulse = colorPulseUntilMs && millis() < colorPulseUntilMs;
+  setColorLed(band, pulse);
+}
+
 void updateLcd() {
   if (!LCD_ENABLED) return;
   uint32_t now = millis();
   if (now - lastLcdMs < LCD_SWITCH_MS) return;
   lastLcdMs = now;
 
-  lcdTapIndex = (lcdTapIndex + 1) % 3;
-  TapChannel &tap = taps[lcdTapIndex];
+  // Always show link status when offline
+  if (WiFi.status() != WL_CONNECTED) {
+    lcd.setCursor(0, 0);
+    lcd.print("WIFI?           ");
+    lcd.setCursor(0, 1);
+    lcd.print("Reconnecting... ");
+    return;
+  }
 
+  // Phase 0 silent: status / IP only — no user-facing liters (esp. not control)
+  if (PRODUCT_PHASE_DISPLAY < 1) {
+    lcd.setCursor(0, 0);
+    lcd.print("P0 SILENT       ");
+    lcd.setCursor(0, 1);
+    lcd.print(WiFi.localIP());
+    lcd.print("        ");
+    return;
+  }
+
+  // Phase 1/2: rotate status, Tap B, Tap C — NEVER Tap A (index 0)
+  static uint8_t phaseFrame = 0;
+  phaseFrame = (phaseFrame + 1) % 3;
+
+  if (phaseFrame == 0) {
+    lcd.setCursor(0, 0);
+    if (PRODUCT_PHASE_DISPLAY >= 3) {
+      lcd.print("P3 SOCIAL       ");
+    } else if (PRODUCT_PHASE_DISPLAY >= 2) {
+      lcd.print("P2 COLOR        ");
+    } else {
+      lcd.print("P1 VISIBILITY   ");
+    }
+    lcd.setCursor(0, 1);
+    if (PRODUCT_PHASE_DISPLAY >= 3) {
+      lcd.print("BOARD LIVE      ");
+    } else {
+      lcd.print("ONLINE          ");
+    }
+    return;
+  }
+
+  // frame 1 -> tap_b (index 1), frame 2 -> tap_c (index 2)
+  uint8_t idx = phaseFrame;  // 1 or 2
+  TapChannel &tap = taps[idx];
   lcd.setCursor(0, 0);
   lcd.print("TAP ");
-  lcd.print(lcdTapIndex + 1);
-  if (lcdTapIndex == 0) lcd.print(" CTRL   ");
-  else lcd.print("        ");
-
+  lcd.print(idx + 1);
+  if (PRODUCT_PHASE_DISPLAY >= 2) {
+    lcd.print(" ");
+    lcd.print(bandLetter(bandForTapIndex(idx)));
+    lcd.print("          ");
+  } else {
+    lcd.print("          ");
+  }
   lcd.setCursor(0, 1);
   lcd.print(tap.sessionLiters, 3);
   lcd.print(" L       ");
@@ -283,6 +417,9 @@ void printPins() {
   Serial.printf("  tap_b           GPIO %d\n", PIN_TAP_B);
   Serial.printf("  tap_c           GPIO %d\n", PIN_TAP_C);
   Serial.println("  sensors VCC -> 5V · GND -> GND (shared)");
+#if USE_COLOR_LED
+  Serial.printf("  WS2812 DIN      GPIO %d (Phase 2 B/C only)\n", PIN_WS2812);
+#endif
 }
 
 void printHelp() {
@@ -387,6 +524,12 @@ void setup() {
     lcd.print("WiFi starting");
   }
 
+#if USE_COLOR_LED
+  colorLed.begin();
+  colorLed.clear();
+  colorLed.show();
+#endif
+
   pinMode(PIN_TAP_A, INPUT_PULLUP);
   pinMode(PIN_TAP_B, INPUT_PULLUP);
   pinMode(PIN_TAP_C, INPUT_PULLUP);
@@ -450,6 +593,7 @@ void loop() {
   }
 
   updateLcd();
+  updateColorCue();
 
   if (now - lastStatusMs >= STATUS_INTERVAL_MS) {
     lastStatusMs = now;

@@ -6,10 +6,12 @@ import { ApiError, apiFetch } from "@/lib/api";
 type Options = {
   /** Poll interval in ms. Default 0 = load once. Use 3000 for live overview. */
   refreshMs?: number;
+  /** When false, do not send JWT (public kiosk endpoints). */
+  auth?: boolean;
 };
 
 export function useApiData<T>(path: string | null, options: Options = {}) {
-  const { refreshMs = 0 } = options;
+  const { refreshMs = 0, auth = true } = options;
   const [data, setData] = useState<T | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(Boolean(path));
@@ -25,7 +27,7 @@ export function useApiData<T>(path: string | null, options: Options = {}) {
     if (!hasData.current) setLoading(true);
     setError(null);
     try {
-      const result = await apiFetch<T>(path);
+      const result = await apiFetch<T>(path, { auth });
       setData(result);
       hasData.current = true;
     } catch (err) {
@@ -34,7 +36,7 @@ export function useApiData<T>(path: string | null, options: Options = {}) {
     } finally {
       setLoading(false);
     }
-  }, [path]);
+  }, [path, auth]);
 
   useEffect(() => {
     void reload();
