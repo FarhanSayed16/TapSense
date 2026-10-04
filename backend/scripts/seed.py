@@ -20,6 +20,8 @@ from app.core.config import get_settings
 from app.core.security import hash_password
 from app.db.indexes import ensure_indexes
 from app.db.mongo import close_db, get_db, ping_db
+from app.services.deployment import ensure_pilot_and_showcase_tagged
+from app.services.org import DEFAULT_FLAGS, ensure_demo_roles
 
 NOW = datetime.now(timezone.utc)
 
@@ -43,7 +45,11 @@ async def seed() -> None:
     await upsert(
         "organizations",
         "org_pilot",
-        {"name": "Pilot College", "timezone": settings.campus_timezone},
+        {
+            "name": "Pilot College",
+            "timezone": settings.campus_timezone,
+            "feature_flags": DEFAULT_FLAGS,
+        },
     )
     await upsert(
         "campuses",
@@ -53,7 +59,12 @@ async def seed() -> None:
     await upsert(
         "buildings",
         "building_hostel",
-        {"name": "Hostel Block", "org_id": "org_pilot", "campus_id": "campus_main"},
+        {
+            "name": "Hostel Block (Pilot)",
+            "org_id": "org_pilot",
+            "campus_id": "campus_main",
+            "deployment_scope": "pilot",
+        },
     )
     await upsert(
         "floors",
@@ -63,6 +74,7 @@ async def seed() -> None:
             "org_id": "org_pilot",
             "campus_id": "campus_main",
             "building_id": "building_hostel",
+            "deployment_scope": "pilot",
         },
     )
     await upsert(
@@ -74,6 +86,7 @@ async def seed() -> None:
             "campus_id": "campus_main",
             "building_id": "building_hostel",
             "floor_id": "floor_1",
+            "deployment_scope": "pilot",
         },
     )
 
@@ -96,6 +109,7 @@ async def seed() -> None:
                 "is_control": is_control,
                 "device_id": "device_01",
                 "pulses_per_liter": ppl,
+                "deployment_scope": "pilot",
             },
         )
 
@@ -106,9 +120,22 @@ async def seed() -> None:
             "name": "Washroom ESP Pilot",
             "org_id": "org_pilot",
             "tap_ids": ["tap_a", "tap_b", "tap_c"],
+            "architecture": "multi_tap",
+            "deployment_scope": "pilot",
+            "building_id": "building_hostel",
+            "floor_id": "floor_1",
+            "zone_id": "zone_washroom",
+            "mqtt_topic": "tapsense/pilot/device_01/telemetry",
             "firmware_version": "0.1.0-pilot",
             "last_seen_at": None,
         },
+    )
+
+    # Product science phase (0=silent baseline, 1=visibility on B/C)
+    await upsert(
+        "pilot_settings",
+        "pilot_main",
+        {"product_phase": 0},
     )
 
     admin_email = settings.admin_email.lower()
@@ -129,9 +156,14 @@ async def seed() -> None:
         user_doc["created_at"] = NOW
         await db.users.insert_one(user_doc)
 
+    await ensure_demo_roles("org_pilot")
+    await ensure_pilot_and_showcase_tagged("org_pilot")
+
     print("Seed OK")
     print(f"  org=org_pilot · taps=tap_a(control), tap_b, tap_c · device=device_01")
     print(f"  admin={admin_email} / (password from ADMIN_PASSWORD in .env)")
+    print("  facilities@tapsense.app · viewer@tapsense.app (same ADMIN_PASSWORD)")
+    print("  deployment=pilot (3 pipes). Showcase Wing stays hidden until showcase_scale=true")
 
 
 async def main() -> None:
