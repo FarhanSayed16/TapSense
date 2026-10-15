@@ -11,7 +11,9 @@ def get_client() -> AsyncIOMotorClient:
         settings = get_settings()
         _client = AsyncIOMotorClient(
             settings.mongodb_uri,
-            serverSelectionTimeoutMS=3000,
+            serverSelectionTimeoutMS=5000,
+            connectTimeoutMS=5000,
+            socketTimeoutMS=10000,
         )
     return _client
 

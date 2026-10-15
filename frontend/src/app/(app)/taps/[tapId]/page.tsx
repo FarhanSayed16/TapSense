@@ -11,6 +11,7 @@ import { Input, Label } from "@/components/ui/Input";
 import { KpiStat } from "@/components/ui/KpiStat";
 import { MiniBars } from "@/components/ui/MiniBars";
 import { ErrorRetry, LoadingBlock } from "@/components/ui/QueryState";
+import { ResetTodayControl } from "@/components/ui/ResetTodayControl";
 import { useToast } from "@/components/ui/Toast";
 import { cn } from "@/lib/cn";
 import { apiFetch } from "@/lib/api";
@@ -210,11 +211,24 @@ export default function TapDetailPage() {
       </section>
 
       <section className="rounded-xl border border-line bg-surface/90 p-4">
-        <h2 className="text-sm font-semibold text-ink">Calibration (Phase 10)</h2>
-        <p className="mt-1 text-sm text-muted">
-          After bucket test, save pulses/L here and mirror the same value in firmware{" "}
-          <span className="mono">config.h</span>.
-        </p>
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <h2 className="text-sm font-semibold text-ink">Calibration (Phase 10)</h2>
+            <p className="mt-1 text-sm text-muted">
+              Bucket test → note dashboard liters → adjust pulses/L →{" "}
+              <span className="font-medium text-ink">reset today</span> → retest from zero.
+              Mirror the final pulses/L in firmware.
+            </p>
+          </div>
+          <ResetTodayControl
+            label="Reset for next test"
+            onDone={() => {
+              void daily.reload();
+              void sessions.reload();
+              void tap.reload();
+            }}
+          />
+        </div>
         <form className="mt-4 flex flex-wrap items-end gap-3" onSubmit={saveCalibration}>
           <div>
             <Label htmlFor="ppl">Pulses per liter</Label>

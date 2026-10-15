@@ -7,6 +7,7 @@ import { EmptyState } from "@/components/ui/EmptyState";
 import { KpiStat } from "@/components/ui/KpiStat";
 import { MiniBars } from "@/components/ui/MiniBars";
 import { ErrorRetry, LoadingBlock } from "@/components/ui/QueryState";
+import { ResetTodayControl } from "@/components/ui/ResetTodayControl";
 import { useScale } from "@/lib/scale-context";
 import { useApiData } from "@/lib/useApiData";
 import {
@@ -76,13 +77,16 @@ export default function OverviewPage() {
             {o.location.building_name} · {o.location.floor_name} · {o.location.zone_name}
           </p>
         </div>
-        <button
-          type="button"
-          onClick={reload}
-          className="rounded-lg border border-line bg-surface px-4 py-2 text-xs font-semibold text-ink-secondary shadow-soft transition-colors hover:bg-bg-subtle hover:text-ink"
-        >
-          Refresh
-        </button>
+        <div className="flex flex-wrap items-center gap-2">
+          <ResetTodayControl onDone={reload} />
+          <button
+            type="button"
+            onClick={reload}
+            className="rounded-lg border border-line bg-surface px-4 py-2 text-xs font-semibold text-ink-secondary shadow-soft transition-colors hover:bg-bg-subtle hover:text-ink"
+          >
+            Refresh
+          </button>
+        </div>
       </div>
 
       {/* ── KPI Row ── */}

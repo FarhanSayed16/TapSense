@@ -31,9 +31,9 @@ const char *MQTT_USER = "";
 const char *MQTT_PASS = "";
 const char *MQTT_TOPIC = "tapsense/pilot/device_01/telemetry";
 
-// HTTP → your PC (change IP if ipconfig shows different Wi‑Fi address)
+// HTTP → your PC (MUST match current Wi‑Fi IPv4 from `ipconfig` — change when LAN IP changes)
 const bool HTTP_INGEST_ENABLED = true;
-const char *HTTP_INGEST_URL = "http://192.168.0.100:8000/api/v1/ingest/telemetry";
+const char *HTTP_INGEST_URL = "http://10.19.83.143:8000/api/v1/ingest/telemetry";
 const char *DEVICE_API_KEY = "tapsense-device-key-9a4e2c8f1b6d0e3a7c5f2b8d1e4a9c6f";
 
 const char *DEVICE_ID = "device_01";

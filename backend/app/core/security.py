@@ -51,7 +51,14 @@ async def get_current_user(
     except JWTError as exc:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token") from exc
 
-    user = await get_db().users.find_one({"email": email}, {"_id": 0, "password_hash": 0})
+    try:
+        user = await get_db().users.find_one({"email": email}, {"_id": 0, "password_hash": 0})
+    except Exception as exc:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Database temporarily unreachable, please retry",
+        ) from exc
+
     if not user or not user.get("is_active", True):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="User not found")
     return user
